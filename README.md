@@ -38,15 +38,12 @@ pip install -r requirements.txt
 ### Running the Code
 
 1. **Splitting Dataset**  
-   Run `preprocess_data_for_training.py` to split the dataset for training.
-   Train folder to:
-   85% train 
-   15% val
+   Run `preprocess_data_for_training.py` to split the dataset for training. Train folder becomes 85% for train, 15% for val.
    
-    Train_CNN/Real: 344
-    Train_CNN/Fake: 267
-    Val_CNN/Real: 61
-    Val_CNN/Fake: 48
+    - Train_CNN/Real: 344
+    - Train_CNN/Fake: 267
+    - Val_CNN/Real: 61
+    - Val_CNN/Fake: 48
 
    ```bash
    python preprocess_data_for_training.py
