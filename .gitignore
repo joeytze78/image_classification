@@ -1,0 +1,9 @@
+# ignore images folder
+/Test/*
+/Train/*
+/Train_CNN/Fake/*
+/Train_CNN/Real/*
+/Val_CNN/Fake/*
+/Val_CNN/Real/*
+/Train_visualization/Fake/*
+/Train_visualization/Real/*
