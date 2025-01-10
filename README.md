@@ -81,7 +81,3 @@ pip install -r requirements.txt
 ## Notes
 
 - The dataset is not included in this repository due to size and licensing constraints. Please download it from the Kaggle competition page.
-
-## Author
-
-Joey
