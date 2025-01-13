@@ -82,9 +82,8 @@ pip install -r requirements.txt
 
 - The dataset is not included in this repository due to size and licensing constraints. Please download it from the Kaggle competition page.
 - Dataset folder:
-   ```
-   Train (Original Train image dataset from Kaggel)
-   Train_dataset (Processed Train folder)
-   Train_CNN (Split from Train_dataset, train set)
-   Valid_CNN (Split from Train_dataset, valid set)
-   ```
+   - Train (Original Train image dataset from Kaggle)
+   - Train_dataset (Processed from Train folder using preprocess_data_for_training.py)
+   - Train_CNN (Split from Train_dataset, train set)
+   - Valid_CNN (Split from Train_dataset, valid set)
+   
