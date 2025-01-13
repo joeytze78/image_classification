@@ -5,7 +5,8 @@
 /Train_CNN/Real/*
 /Val_CNN/Fake/*
 /Val_CNN/Real/*
-/Train_visualization/Fake/*
-/Train_visualization/Real/*
+/Train_dataset/Fake/*
+/Train_dataset/Real/*
 /Train_CNN
 /Val_CNN
+/Train
