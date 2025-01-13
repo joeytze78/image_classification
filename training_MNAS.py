@@ -63,14 +63,21 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
             total_samples = 0
 
             for inputs, labels in dataloaders[phase]:
+                # print(f"Before squeezing: Labels shape: {labels.shape}")
+
                 inputs = inputs.to(device)
-                labels = labels.float().unsqueeze(1).to(device)  
+                # labels = labels.float().unsqueeze(1).to(device)  
+                labels = labels.to(device) 
+
+                outputs = model(inputs)
+                # print(f"Outputs shape: {outputs.shape}, Outputs: {outputs[:5]}")
+                # print(f"Labels shape: {labels.shape}, Labels: {labels[:5]}")
 
                 optimizer.zero_grad()
 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
-                    preds = (outputs > 0.5).float()  
+                    preds = torch.argmax(outputs, dim=1)
                     loss = criterion(outputs, labels)
 
                     if phase == 'train':
@@ -128,11 +135,13 @@ def evaluate_and_save_metrics(model, dataloader, folder):
 
     with torch.no_grad():
         for inputs, labels in dataloader:
+
             inputs = inputs.to(device)
-            labels = labels.float().unsqueeze(1).to(device)
+            # labels = labels.float().unsqueeze(1).to(device)
+            labels = labels.to(device)
 
             outputs = model(inputs)
-            preds = (outputs > 0.5).float()
+            preds = torch.argmax(outputs, dim=1)
 
             all_labels.extend(labels.cpu().numpy())
             all_preds.extend(preds.cpu().numpy())
@@ -174,6 +183,7 @@ def log_training_details_json(run_folder, model, optimizer, batch_size, num_epoc
         "Loss Function": criterion.__class__.__name__,
         "Device": "GPU" if torch.cuda.is_available() else "CPU",
         "Augmentations": "Fliplr, Affine, GaussianBlur, AdditiveGaussianNoise during training when loading images",
+        "Dataset Version" : "Version 2"
     }
     log_file = os.path.join(run_folder, "training_details.json")
     with open(log_file, "w") as f:
@@ -219,7 +229,7 @@ val_dataset = AugmentedImageDataset(val_path, transform=data_transforms['val'], 
 
 batch_size = 64
 lr = 0.001
-num_epochs = 200
+num_epochs = 5
 
 data_dir = "/home/joey/CIDAUT"
 
@@ -233,16 +243,16 @@ num_classes = len(train_dataset.classes)
 print(f"Classes: {train_dataset.classes}, number of classes: {num_classes}")
 
 # Model setup
-model = models.efficientnet_b0(weights="EfficientNet_B0_Weights.DEFAULT")
+model = models.mnasnet1_3(weights="MNASNet1_3_Weights.IMAGENET1K_V1")
 model.classifier = nn.Sequential(
     # nn.Linear(model.fc.in_features, 1), # for ResNet
-    nn.Linear(model.classifier[1].in_features, 1),
+    nn.Linear(model.classifier[1].in_features, 2),
     # nn.Sigmoid()  # used BCEWithLogitsLoss 
 )
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
-criterion = nn.BCEWithLogitsLoss()  # For binary classification
+criterion = nn.CrossEntropyLoss()  # For binary classification
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 dataloaders = {"train": train_dataset_loader, "val": val_dataset_loader}
@@ -259,7 +269,7 @@ run_folder = os.path.join(output_folder, f"run{next_run_number}")
 os.makedirs(run_folder, exist_ok=True)
 
 # Save model state
-model_path = os.path.join(run_folder, "EfficientNetB0.pth")
+model_path = os.path.join(run_folder, "MNASNet.pth")
 torch.save(model.state_dict(), model_path)
 print(f"Model saved as: {model_path}")
 

@@ -1,0 +1,5 @@
+[core]
+    remote = origin
+['remote "origin"']
+    url = ssh://joey@waulabs-ai.ddns.net:2244/shared/aifake
+    keyfile = /home/joey/.ssh/id_rsa
