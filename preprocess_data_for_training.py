@@ -17,13 +17,13 @@ def split_data(source, train_dest, val_dest, valid_ratio=0.15):
 
 
 
-source_folder = "/home/joey/CIDAUT/Train_visualization"
+source_folder = "/home/joey/CIDAUT/Train_dataset"
 train_folder = "/home/joey/CIDAUT/Train_CNN"
 val_folder = "/home/joey/CIDAUT/Val_CNN"
 
 ### Count before split
-print("Train_visualization/Real: " + str(count_files(os.path.join(source_folder, "Real"))))
-print("Train_visualization/Fake: " + str(count_files(os.path.join(source_folder, "Fake"))))
+print("Train_dataset/Real: " + str(count_files(os.path.join(source_folder, "Real"))))
+print("Train_dataset/Fake: " + str(count_files(os.path.join(source_folder, "Fake"))))
 
 split_data(os.path.join(source_folder, "Fake"), os.path.join(train_folder, "Fake"), os.path.join(val_folder, "Fake"))
 split_data(os.path.join(source_folder, "Real"), os.path.join(train_folder, "Real"), os.path.join(val_folder, "Real"))
