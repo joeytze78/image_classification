@@ -1,0 +1,6 @@
+outs:
+- md5: 005006e7b8c622fa52a2e31fbc3375ea.dir
+  size: 19679370
+  nfiles: 109
+  hash: md5
+  path: Val_CNN

@@ -1,0 +1,6 @@
+outs:
+- md5: afde7919d544d6b77d48e75d3e91e256.dir
+  size: 106091657
+  nfiles: 611
+  hash: md5
+  path: Train_CNN

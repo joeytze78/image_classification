@@ -7,3 +7,5 @@
 /Val_CNN/Real/*
 /Train_visualization/Fake/*
 /Train_visualization/Real/*
+/Train_CNN
+/Val_CNN
