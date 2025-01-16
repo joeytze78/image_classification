@@ -1,0 +1,11 @@
+{
+    "Model": "MLP",
+    "Optimizer": "Adam",
+    "Learning Rate": 0.001,
+    "Batch Size": 32,
+    "Number of Epochs": 5,
+    "Loss Function": "CrossEntropyLoss",
+    "Device": "GPU",
+    "Dataset Version": "Version 2",
+    "Training Details": "Testing"
+}

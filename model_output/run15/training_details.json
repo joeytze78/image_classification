@@ -1,0 +1,11 @@
+{
+    "Model": "MNASNet",
+    "Optimizer": "Adam",
+    "Learning Rate": 0.001,
+    "Batch Size": 64,
+    "Number of Epochs": 100,
+    "Loss Function": "CrossEntropyLoss",
+    "Device": "GPU",
+    "Augmentations": "Fliplr, Affine, GaussianBlur, AdditiveGaussianNoise during training when loading images",
+    "Dataset Version": "Version 2"
+}
