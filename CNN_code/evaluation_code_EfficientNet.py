@@ -46,7 +46,7 @@ model.classifier = torch.nn.Sequential(
 )
 model = model.to(device)
 
-model.load_state_dict(torch.load("/home/joey/CIDAUT/model_output/run18/EfficientNetB0.pth"))
+model.load_state_dict(torch.load("/home/joey/CIDAUT/model_output/run20/EfficientNetB0.pth"))
 model.eval()
 
 # Run predictions on the test set

@@ -79,12 +79,14 @@ val_path = data_dir + "/Val_CNN"
 val_dataset = AugmentedFolderDataset(root_dir=val_path, transform=data_transforms['val'], augmentations=None)
 val_dataset_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-def generate_heatmaps(model, dataloader, output_folder, target_layer):
+def generate_and_display_heatmaps(model, dataloader, target_layer, device, heatmap_output_folder, num_images=3):
     model.eval()  # Set the model to evaluation mode
 
+    # Grad-CAM setup (no use_cuda argument)
     cam = GradCAM(model=model, target_layers=[target_layer])
 
-    for idx, (inputs, labels) in enumerate(dataloader):
+    images_processed = 0
+    for inputs, labels in dataloader:
         inputs = inputs.to(device)
         labels = labels.to(device)
 
@@ -92,23 +94,61 @@ def generate_heatmaps(model, dataloader, output_folder, target_layer):
         preds = torch.argmax(outputs, dim=1)  
 
         for i in range(inputs.size(0)):
+            if images_processed >= num_images:
+                return  # Stop after processing the desired number of images
+
             input_tensor = inputs[i].unsqueeze(0)
             label = torch.argmax(labels[i]).item()  
             pred_label = preds[i].item()
 
-            # Generate heatmap for the predicted class
-            heatmap = cam(input_tensor=input_tensor, targets=[ClassifierOutputTarget(1)])  # Real
-            heatmap = cam(input_tensor=input_tensor, targets=[ClassifierOutputTarget(0)])  # Fake
+            # Generate heatmaps for Real (1) and Fake (0)
+            heatmap_real = cam(input_tensor=input_tensor, targets=[ClassifierOutputTarget(1)])
+            heatmap_fake = cam(input_tensor=input_tensor, targets=[ClassifierOutputTarget(0)])
             
-            # Convert the image back to PIL format
+            # Convert the image back to PIL format for visualization
             input_image = input_tensor.squeeze(0).cpu()
             input_image = F.to_pil_image(input_image)
 
-            # Save heatmap
-            heatmap_image = show_cam_on_image(np.array(input_image) / 255.0, heatmap[0], use_rgb=True)
-            heatmap_path = os.path.join(output_folder, f"heatmap_idx_{idx}_label_{label}_pred_{pred_label}.png")
-            plt.imsave(heatmap_path, heatmap_image)
-            print(f"Saved heatmap to {heatmap_path}")
+            # Overlay heatmaps on the image
+            heatmap_real_overlay = show_cam_on_image(np.array(input_image) / 255.0, heatmap_real[0], use_rgb=True)
+            heatmap_fake_overlay = show_cam_on_image(np.array(input_image) / 255.0, heatmap_fake[0], use_rgb=True)
+
+            # Plot the image and heatmaps
+            plt.figure(figsize=(15, 5))
+            plt.suptitle(f"Label: {label} (Ground Truth) | Prediction: {pred_label}", fontsize=16)
+
+            # Original Image
+            plt.subplot(1, 3, 1)
+            plt.imshow(input_image)
+            plt.title("Original Image")
+            plt.axis("off")
+
+            # Heatmap for Real
+            plt.subplot(1, 3, 2)
+            plt.imshow(heatmap_real_overlay)
+            plt.title("Real Part Heatmap")
+            plt.axis("off")
+
+            # Heatmap for Fake
+            plt.subplot(1, 3, 3)
+            plt.imshow(heatmap_fake_overlay)
+            plt.title("Fake Part Heatmap")
+            plt.axis("off")
+
+            # Show the plot
+            plt.show()
+
+            # Save heatmaps
+            real_path = os.path.join(heatmap_output_folder, f"real_heatmap_{images_processed}_label_{label}_pred_{pred_label}.png")
+            fake_path = os.path.join(heatmap_output_folder, f"fake_heatmap_{images_processed}_label_{label}_pred_{pred_label}.png")
+
+            plt.imsave(real_path, heatmap_real_overlay)
+            plt.imsave(fake_path, heatmap_fake_overlay)
+
+            print(f"Saved real heatmap to: {real_path}")
+            print(f"Saved fake heatmap to: {fake_path}")
+
+            images_processed += 1
 
 # generate Grad-CAM heatmaps
 target_layer = model.features[-1]  # Target the last convolutional layer
@@ -116,4 +156,4 @@ run_folder = "CNN_code/"
 heatmap_output_folder = os.path.join(run_folder, "EfficientNetB0/heatmaps")
 os.makedirs(heatmap_output_folder, exist_ok=True)
 
-generate_heatmaps(model, val_dataset_loader, heatmap_output_folder, target_layer)
+generate_and_display_heatmaps(model, val_dataset_loader, target_layer, device, heatmap_output_folder, num_images=3)
