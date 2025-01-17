@@ -15,33 +15,44 @@ from PIL import Image
 import numpy as np
 from torch.utils.data import Dataset
 
-class AugmentedImageDataset(Dataset):
-    """Custom Dataset for on-the-fly image loading and augmentation."""
-    def __init__(self, image_folder, transform=None, augmentations=None):
-        self.dataset = datasets.ImageFolder(image_folder)
+class AugmentedFolderDataset(Dataset):
+    """Custom Dataset for handling folder structure with augmentations."""
+    def __init__(self, root_dir, transform=None, augmentations=None):
+        self.data = []
         self.transform = transform
         self.augmentations = augmentations
-        self.class_to_idx = self.dataset.class_to_idx
-        self.classes = self.dataset.classes
+
+        self.classes = ["Real", "Fake"]  
+        
+        real_dir = os.path.join(root_dir, "Real")
+        fake_dir = os.path.join(root_dir, "Fake")
+
+        # Real images (Real = 1, Fake = 0)
+        for img_name in os.listdir(real_dir):
+            self.data.append((os.path.join(real_dir, img_name), torch.tensor([1.0, 0.0], dtype=torch.float32)))
+
+        # Fake images (Real = 0, Fake = 1)
+        for img_name in os.listdir(fake_dir):
+            self.data.append((os.path.join(fake_dir, img_name), torch.tensor([0.0, 1.0], dtype=torch.float32)))
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.data)
 
     def __getitem__(self, idx):
-        img, label = self.dataset[idx]
-
-        img = np.array(img)
+        img_path, label = self.data[idx]
+        image = Image.open(img_path).convert("RGB")
+        image_np = np.array(image)
 
         if self.augmentations:
-            img = self.augmentations(image=img)
+            image_np = self.augmentations(image=image_np)
 
-        img = Image.fromarray(img)
+        image = Image.fromarray(image_np)
 
         if self.transform:
-            img = self.transform(img)
+            image = self.transform(image)
 
-        return img, label
-
+        return image, label
+    
 def train_model(model, dataloaders, criterion, optimizer, num_epochs):
     train_loss_history = []
     train_acc_history = []
@@ -59,21 +70,19 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
                 model.eval()
 
             running_loss = 0.0
-            running_corrects = 0
+            running_corrects = 0  # Initialize as integer
             total_samples = 0
 
             for inputs, labels in dataloaders[phase]:
-
                 inputs = inputs.to(device)
-                # labels = labels.float().unsqueeze(1).to(device)  
-                labels = labels.to(device) 
+                labels = labels.to(device)
 
-                outputs = model(inputs)
                 optimizer.zero_grad()
 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
-                    preds = torch.argmax(outputs, dim=1)
+                    preds = torch.argmax(outputs, dim=1)  # Get predicted class (0 or 1)
+                    targets = torch.argmax(labels, dim=1)  # Convert one-hot to class indices
                     loss = criterion(outputs, labels)
 
                     if phase == 'train':
@@ -81,24 +90,23 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs):
                         optimizer.step()
 
                 running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
+                running_corrects += torch.sum(preds == targets).item()  # Sum correct predictions
                 total_samples += inputs.size(0)
 
             epoch_loss = running_loss / total_samples
-            epoch_acc = running_corrects.double() / total_samples
+            epoch_acc = running_corrects / total_samples  # Calculate accuracy
 
             if phase == 'train':
                 train_loss_history.append(epoch_loss)
-                train_acc_history.append(epoch_acc.item())
+                train_acc_history.append(epoch_acc)
             else:
                 val_loss_history.append(epoch_loss)
-                val_acc_history.append(epoch_acc.item())
+                val_acc_history.append(epoch_acc)
 
             print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
 
     return train_loss_history, train_acc_history, val_loss_history, val_acc_history
 
-# Save plots
 def save_plots(train_loss, val_loss, train_acc, val_acc, folder):
     # Loss Plot
     plt.figure(figsize=(10, 5))
@@ -131,19 +139,19 @@ def evaluate_and_save_metrics(model, dataloader, folder):
 
     with torch.no_grad():
         for inputs, labels in dataloader:
-
             inputs = inputs.to(device)
-            # labels = labels.float().unsqueeze(1).to(device)
             labels = labels.to(device)
+
+            targets = torch.argmax(labels, dim=1)
 
             outputs = model(inputs)
             preds = torch.argmax(outputs, dim=1)
 
-            all_labels.extend(labels.cpu().numpy())
+            all_labels.extend(targets.cpu().numpy())
             all_preds.extend(preds.cpu().numpy())
 
-    # Confusion Matrix
     conf_matrix = confusion_matrix(all_labels, all_preds)
+
     plt.figure(figsize=(8, 6))
     sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", xticklabels=train_dataset.classes, yticklabels=train_dataset.classes)
     plt.title("Confusion Matrix")
@@ -220,9 +228,8 @@ test_augs = iaa.Sequential([
 data_dir = "/home/joey/CIDAUT"
 train_path = data_dir + "/Train_CNN"
 val_path = data_dir + "/Val_CNN"
-train_dataset = AugmentedImageDataset(train_path, transform=data_transforms['train'], augmentations=train_augs)
-val_dataset = AugmentedImageDataset(val_path, transform=data_transforms['val'], augmentations=test_augs)
-
+train_dataset = AugmentedFolderDataset(root_dir=train_path, transform=data_transforms['train'], augmentations=train_augs)
+val_dataset = AugmentedFolderDataset(root_dir=val_path, transform=data_transforms['val'], augmentations=None)
 batch_size = 64
 lr = 0.001
 num_epochs = 200
@@ -249,7 +256,7 @@ model.classifier = nn.Sequential(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
-criterion = nn.CrossEntropyLoss()  # For binary classification
+criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 dataloaders = {"train": train_dataset_loader, "val": val_dataset_loader}

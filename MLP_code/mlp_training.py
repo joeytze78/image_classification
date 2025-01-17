@@ -34,8 +34,10 @@ class MLP(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),  # Additional layer
+            nn.ReLU(),
             nn.Linear(hidden_dim, output_dim),
-            nn.Softmax(dim=1)  # For classification probabilities
+            nn.Softmax(dim=1)  # Output probabilities
         )
 
     def forward(self, x):
@@ -64,27 +66,28 @@ def save_training_results(run_folder, model, optimizer, batch_size, num_epochs, 
     print(f"Training details saved to: {log_file}")
 
     # Save Training and Validation Plots
+    total_epochs = len(train_loss)
+    step_size = max(1, total_epochs // 10)
+
     plt.figure(figsize=(10, 5))
-    plt.plot(range(1, len(train_loss) + 1), train_loss, label="Train Loss", marker='o')
-    plt.plot(range(1, len(val_loss) + 1), val_loss, label="Val Loss", marker='o')
+    plt.plot(train_loss, label="Train Loss")
+    plt.plot(val_loss, label="Val Loss")
     plt.title("Loss over Epochs")
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
-    plt.xticks(range(1, len(train_loss) + 1))
+    plt.xticks(range(1, len(train_loss) + 1, step_size))
     plt.legend()
-    plt.grid(True)
     plt.savefig(os.path.join(run_folder, "loss_plot.png"))
     plt.close()
 
     plt.figure(figsize=(10, 5))
-    plt.plot(range(1, len(train_acc) + 1), train_acc, label="Train Accuracy", marker='o')
-    plt.plot(range(1, len(val_acc) + 1), val_acc, label="Val Accuracy", marker='o')
+    plt.plot(train_acc, label="Train Accuracy")
+    plt.plot(val_acc, label="Val Accuracy")
     plt.title("Accuracy over Epochs")
     plt.xlabel("Epochs")
     plt.ylabel("Accuracy (%)")
-    plt.xticks(range(1, len(train_acc) + 1))
+    plt.xticks(range(1, len(train_acc) + 1, step_size))
     plt.legend()
-    plt.grid(True)
     plt.savefig(os.path.join(run_folder, "accuracy_plot.png"))
     plt.close()
 
@@ -149,7 +152,7 @@ hidden_dim = 64
 output_dim = 2  # Real and Fake
 batch_size = 32
 learning_rate = 0.001
-num_epochs = 5
+num_epochs = 200
 class_names = ["Real", "Fake"]
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -201,10 +204,11 @@ for epoch in range(num_epochs):
         correct_train += (preds == target).sum().item()
         total_train += target.size(0)
 
-    train_loss_history.append(total_train_loss / len(dataloader['train']))
+    average_train_loss = total_train_loss / len(dataloader['train'])
+    train_loss_history.append(average_train_loss)
     train_acc_history.append(correct_train / total_train * 100)
     
-    print(f"\nEpoch [{epoch+1}/{num_epochs}]: \nTraining Loss: {total_train_loss:.4f}, Accuracy: {correct_train / total_train * 100:.2f}%")
+    print(f"\nEpoch [{epoch+1}/{num_epochs}]: \nAverage Training Loss: {average_train_loss:.4f}, Accuracy: {correct_train / total_train * 100:.2f}%")
 
     # Validation phase
     model.eval()  
@@ -226,11 +230,12 @@ for epoch in range(num_epochs):
             preds = torch.argmax(outputs, dim=1)
             correct_val += (preds == target).sum().item()
             total_val += target.size(0)
-
-    val_loss_history.append(total_val_loss / len(dataloader['val']))
+    
+    average_val_loss = total_val_loss / len(dataloader['val'])
+    val_loss_history.append(average_val_loss)
     val_acc_history.append(correct_val / total_val * 100)
     
-    print(f"Validation Loss: {total_val_loss:.4f}, Accuracy: {correct_val / total_val * 100:.2f}%")
+    print(f"Average Validation Loss: {average_val_loss:.4f}, Accuracy: {correct_val / total_val * 100:.2f}%")
 
 # Save model
 output_folder = "/home/joey/CIDAUT/model_output"

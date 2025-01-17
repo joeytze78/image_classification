@@ -1,0 +1,12 @@
+{
+    "Model": "MNASNet",
+    "Optimizer": "Adam",
+    "Learning Rate": 0.001,
+    "Batch Size": 64,
+    "Number of Epochs": 5,
+    "Loss Function": "MSELoss",
+    "Device": "GPU",
+    "Augmentations": "Fliplr, Affine, GaussianBlur, AdditiveGaussianNoise during training when loading images",
+    "Dataset Version": "Version 2",
+    "Input & Output": "Regression model, Real score and Fake score ranges from 0 to 1"
+}
